@@ -1,0 +1,26 @@
+﻿```
+Events dat de NLBE-Bot heeft:
+• op middernacht alle bijnamen in de discord server nakijken (kijken of de bijnaam van de discordgebruiker overeenkomt met de naam van de persoon zijn of haar wargaming account) --> zeer handig om na te kijken of iemand van clan verandert en dus ook of iemand uit je clan is gegaan
+• wekelijkse event
+• nieuwe discord gebruikers verwelkomen in de discordserver + ervoor zorgen dat de nieuwe gebruiker zijn of haar wargaming naam geeft + stelt deze in als bijnaam voor die persoon
+• vermelden wanneer een persoon uit de discord server gaat
+• Hall Of Fame (Ook wel hof genoemd. Houdt de beste scores van tanks bij in een apart kanaal en houdt deze scores up-to-date met behulp van de replays die geüpload worden in het replays kanaal)
+• een log bijhouden van alle mensen die zich aangemeld hebben voor een toernooi
+
+Zie NLBE server voor toepassingen ervan.
+```
+
+Top recommanded:
+• deputypoll
+• tagteams
+• ignore
+• gebruiker
+• gebruikerslijst
+• clan
+• clanmembers
+• spelerinfo
+
+Events:
+• nieuwe gebruikers verwelkomen
+• vermelden wanneer gebruikers uit server gaan
+• volledig automatische clan Hall Of Fame
