@@ -45,7 +45,7 @@ namespace NLBE_Bot
                 foreach (WeeklyEventItem weeklyEventItem in WeeklyEventItems)
                 {
                     DEF def = weeklyEventItem.GenerateDEF();
-                    newDiscEmbedBuilder.AddField(def.Name, def.Value.adaptToDiscordChat(), def.Inline);
+                    newDiscEmbedBuilder.AddField(def.Name, def.Value, def.Inline);
                 }
 
                 newDiscEmbedBuilder.Title = this.Tank.Replace("\\", string.Empty);

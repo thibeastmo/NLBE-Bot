@@ -7,22 +7,14 @@ using FMWOTB;
 using FMWOTB.Account;
 using FMWOTB.Clans;
 using FMWOTB.Tools;
-using FMWOTB.Tools.Replays;
 using FMWOTB.Tournament;
-using JsonObjectConverter;
 using Microsoft.Extensions.Logging;
+using NLBE_Bot.Blitzstars;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using FMWOTB.Vehicles;
-using Newtonsoft.Json;
-using NLBE_Bot.Blitzstars;
 
 namespace NLBE_Bot
 {
@@ -1493,7 +1485,7 @@ namespace NLBE_Bot
         }
         [Command("Gebruikerslijst")]
         [Aliases("gl")]
-        [Description("Geeft alle members van de server als format: username#discriminator.\n-u --> username\n-d --> discriminator\n-n --> nickname\n-! --> not\n-b --> geeft bijnamen ipv standaard format\n-o --> sorteert op datum van creatie van WarGaming account (de niet gevonden accounts sorteert ie alfabetisch)\n-c --> sorteert op clanjoindatum (de niet gevonden accounts sorteert ie alfabetisch)"
+        [Description("Geeft alle members van de server als format: username#discriminator.\n-u --> username\n-d --> discriminator\n-n --> nickname\n-! --> not\n-b --> geeft bijnamen ipv standaard format (enkel voor de weergave, niet voor de filtering)\n-o --> sorteert op datum van creatie van WarGaming account (de niet gevonden accounts sorteert ie alfabetisch)\n-c --> sorteert op clanjoindatum (de niet gevonden accounts sorteert ie alfabetisch)"
         + "Bijvoorbeeld:\n`" + Bot.Prefix + "gl -n [NLBE]` --> geeft alle leden waarbij \"[NLBE]\" in de bijnaam voorkomt (die dus de NLBE rol hebben)\n" +
             "`" + Bot.Prefix + "gl -n!u [NLBE]` --> geeft de gebruikers waarbij \"[NLBE]\" niet in de gebruikersnaam voorkomt maar wel in de bijnaam\n" +
             "`" + Bot.Prefix + "gl -!n [NLBE` --> geeft alle leden waarbij \"[NLBE\" niet in de bijnaam voorkomt (dus de personen die niet in een NLBE clan zitten)\n" +
@@ -1545,12 +1537,12 @@ namespace NLBE_Bot
                                         inverted = true;
                                     }
                                 }
-                                if (!inverted && member.Username.ToLower().Contains(conditie.ToLower()))
+                                if (!inverted && member.Username.ToLower().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
                                 }
-                                else if (inverted && !member.Username.ToLower().Contains(conditie.ToLower()))
+                                else if (inverted && !member.Username.ToLower().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
@@ -1571,12 +1563,12 @@ namespace NLBE_Bot
                                         inverted = true;
                                     }
                                 }
-                                if (!inverted && member.Discriminator.ToString().Contains(conditie.ToLower()))
+                                if (!inverted && member.Discriminator.ToString().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
                                 }
-                                else if (inverted && !member.Discriminator.ToString().Contains(conditie.ToLower()))
+                                else if (inverted && !member.Discriminator.ToString().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
@@ -1597,12 +1589,12 @@ namespace NLBE_Bot
                                         inverted = true;
                                     }
                                 }
-                                if (!inverted && member.DisplayName.ToLower().Contains(conditie.ToLower()))
+                                if (!inverted && member.DisplayName.ToLower().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
                                 }
-                                else if (inverted && !member.DisplayName.ToLower().Contains(conditie.ToLower()))
+                                else if (inverted && !member.DisplayName.ToLower().Contains(conditie.Split('*')[0].ToLower()))
                                 {
                                     addList.RemoveAt(addList.Count - 1);
                                     addList.Add(true);
@@ -1738,7 +1730,6 @@ namespace NLBE_Bot
 
                     if (amountOfMembers > 0)
                     {
-
                         deflist = Bot.listInMemberEmbed(COLUMNS, memberList, searchTerm);
                     }
 
@@ -2606,6 +2597,61 @@ namespace NLBE_Bot
         //        }
         //    }
         //}
+        #endregion
+        #region ListGebruikers
+        // [Command("ListGebruikers")]
+        // [Aliases("lg")]
+        // [Description("Lijst de bijnamen van alle gebruikers op naargelang hun WoTB gebruikersnaam en clan.")]
+        // public async Task updateUsers(CommandContext ctx)
+        // {
+        //     if (!Bot.ignoreCommands)
+        //     {
+        //         if (Bot.hasRight(ctx.Member, ctx.Command))
+        //         {
+        //             await Bot.confirmCommandExecuting(ctx.Message);
+        //             
+        //             IReadOnlyCollection<DiscordMember> members = await ctx.Guild.GetAllMembersAsync();
+        //             StringBuilder sb = new StringBuilder();
+        //             foreach (DiscordMember member in members)
+        //             {
+        //                 if (!member.IsBot)
+        //                 {
+        //                     if (member.Roles != null)
+        //                     {
+        //                         if (member.Roles.Contains(ctx.Guild.GetRole(Bot.LEDEN_ROLE)))
+        //                         {
+        //                             IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, member.DisplayName.Split("] ")[1], Bot.WG_APPLICATION_ID, false, true, false);
+        //                             if (wgAccounts != null)
+        //                             {
+        //                                 if (wgAccounts.Count > 0)
+        //                                 {
+        //                                     string currentClanTag = string.Empty;
+        //                                     if (wgAccounts[0].clan != null)
+        //                                     {
+        //                                         if (wgAccounts[0].clan.tag != null)
+        //                                         {
+        //                                             currentClanTag = wgAccounts[0].clan.tag;
+        //                                         }
+        //                                     }
+        //                                     string goodDisplayName = '[' + currentClanTag + "] " + wgAccounts[0].nickname;
+        //                                     sb.AppendLine(goodDisplayName);
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //             
+        //             //TODO: actually send the message with sb as content
+        //
+        //             await Bot.confirmCommandExecuted(ctx.Message);
+        //         }
+        //         else
+        //         {
+        //             await Bot.SayTheUserIsNotAllowed(ctx.Channel);
+        //         }
+        //     }
+        // }
         #endregion
         #region genereerlog
         //[Command("GenLog")]
