@@ -1,12 +1,21 @@
-﻿using DSharpPlus;
+﻿using DiscordHelper;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Net.Models;
 using FMWOTB;
+using FMWOTB.Account;
+using FMWOTB.Clans;
+using FMWOTB.Exceptions;
+using FMWOTB.Tools;
 using FMWOTB.Tools.Replays;
+using FMWOTB.Tournament;
+using FMWOTB.Vehicles;
 using JsonObjectConverter;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -16,24 +25,15 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using FMWOTB.Account;
-using FMWOTB.Vehicles;
-using FMWOTB.Clans;
-using FMWOTB.Tools;
-using FMWOTB.Tournament;
-using DiscordHelper;
-using System.Timers;
-using FMWOTB.Exceptions;
-using Microsoft.VisualBasic;
-using DSharpPlus.EventArgs;
 
-namespace NLBE_Bot {
+namespace NLBE_Bot 
+{
     //version 4.0.0-nightly-00760
-    public class Bot {
+    internal class Bot(ILogger logger, IConfiguration configuration)
+    {
         // public static string version = "THIMO LOCAL";
         public static string version = "2.12";
         // public const string Prefix = "test ";
-        private const string Token = "";//nlbe bot
         public const string Prefix = "nlbe ";
         public const string logInputPath = "./loginputlines.txt";
         public const string WG_APPLICATION_ID = "";
@@ -87,6 +87,10 @@ namespace NLBE_Bot {
         private static DiscordMessage discordMessage;//temp message
         private DateTime lasTimeNamesWereUpdated;
         private short heartBeatCounter = 0;
+
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
         public async Task RunAsync()
         {
             //fmwotb = new Application(WG_APPLICATION_ID);
@@ -94,7 +98,7 @@ namespace NLBE_Bot {
 
             discordClient = new DiscordClient(new DiscordConfiguration
             {
-                Token = Token,
+                Token = _configuration["NLBEBOT:DiscordToken"],
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
                 Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents
