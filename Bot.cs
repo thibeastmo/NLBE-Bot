@@ -90,7 +90,7 @@ namespace NLBE_Bot {
         public async Task RunAsync()
         {
             //fmwotb = new Application(WG_APPLICATION_ID);
-
+            Console.ForegroundColor = ConsoleColor.Gray;
 
             discordClient = new DiscordClient(new DiscordConfiguration
             {

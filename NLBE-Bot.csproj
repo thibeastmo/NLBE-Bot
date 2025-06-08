@@ -20,6 +20,7 @@
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.4.9" />
     <PackageReference Include="FMWOTB" Version="1.0.52" />
     <PackageReference Include="JsonObjectConverter" Version="1.0.38" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
     <PackageReference Include="runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl" Version="4.3.3" />
     <PackageReference Include="runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl" Version="4.3.3" />
     <PackageReference Include="runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl" Version="4.3.3" />
