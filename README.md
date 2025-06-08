@@ -11,8 +11,8 @@
 04. Register a Windows Service by executing the following commands:
 
 	```pwsh
-	sc create "NLBEBot" binpath="C:\ProgramData\NLBEBot\NLBE-Bot.exe"
-	sc config "NLBEBot" start=auto
+	sc create "NLBE-Bot" binpath="C:\ProgramData\NLBEBot\NLBE-Bot.exe"
+	sc config "NLBE-Bot" start=auto
 	```
 
 ### Configuration

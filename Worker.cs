@@ -23,13 +23,17 @@ namespace NLBE_Bot
             try
             {
                 while (!stoppingToken.IsCancellationRequested)
-                {                   
+                {
                     await new Bot(_logger, _configuration).RunAsync(); // Note: the bot does not yet support gracefull cancellation.                 
                 }
             }
+            catch (OperationCanceledException ex) 
+            {
+                _logger.LogInformation(ex, "NLBE Bot was cancelled gracefully.");
+            }
             finally
-            {                
-                _logger.LogInformation("NLBE Bot is stopping.");
+            {
+                _logger.LogInformation("NLBE Bot is stopped.");
             }
         }
     }
