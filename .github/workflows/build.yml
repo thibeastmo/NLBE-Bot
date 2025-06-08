@@ -31,5 +31,10 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
 
+    - name: SonarQubeScan
+      uses: SonarSource/sonarqube-scan-action@v4
+      env: 
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     #- name: Test
     #  run: dotnet test --no-build --verbosity normal
