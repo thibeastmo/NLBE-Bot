@@ -81,21 +81,20 @@ namespace NLBE_Bot
         public static bool ignoreCommands = false;
         public static bool ignoreEvents = false;
         public static Tuple<ulong, DateTime> weeklyEventWinner = new Tuple<ulong, DateTime>(0, DateTime.Now);
-        public static int waitTime = 30;
-        public static int hofWaitTime = 2;//in minutes
-        public static int newPlayerWaitTime = 1;//In days
+
         private static DiscordMessage discordMessage;//temp message
         private DateTime lasTimeNamesWereUpdated;
         private short heartBeatCounter = 0;
 
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private static ILogger _loggerTmp;
 
         public async Task RunAsync()
         {
-            //fmwotb = new Application(WG_APPLICATION_ID);
-            Console.ForegroundColor = ConsoleColor.Gray;
+            _loggerTmp = _logger; // Note: temporary workarround to access the logger due to excessive usage of static methods.
 
+            //fmwotb = new Application(WG_APPLICATION_ID);
             discordClient = new DiscordClient(new DiscordConfiguration
             {
                 Token = _configuration["NLBEBOT:DiscordToken"],
@@ -103,10 +102,10 @@ namespace NLBE_Bot
                 AutoReconnect = true,
                 Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents
             });
-
+            
             discordClient.UseInteractivity(new InteractivityConfiguration
             {
-                Timeout = TimeSpan.FromSeconds(Bot.waitTime),
+                Timeout = TimeSpan.FromSeconds(int.TryParse(_configuration["NLBEBOT:DiscordTimeOutInSeconds"], out int timeout) ? timeout : 0)
             });
 
             var commandsConfig = new CommandsNextConfiguration
@@ -158,9 +157,7 @@ namespace NLBE_Bot
                 return await channel.SendMessageAsync(Message);
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
                 await handleError("[" + guildName + "] (" + channel.Name + ") Could not send message: ", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
                 Worked = false;
                 if (ex.Message.ToLower().Contains("unauthorized")){
                     await Bot.SayBotNotAuthorized(channel);
@@ -824,7 +821,7 @@ namespace NLBE_Bot
                                             else{
                                                 question = "**We konden dit Wargamingaccount niet vinden, probeer opnieuw! (Hoofdlettergevoelig)**\n" + question;
                                             }
-                                            string ign = Bot.askQuestion(await Bot.GetWelkomChannel(), user, guild, question).Result;
+                                            string ign = askQuestion(await Bot.GetWelkomChannel(), user, guild, question).Result;
                                             searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WG_APPLICATION_ID, false, true, false);
                                             if (searchResults != null){
                                                 if (searchResults != null){
@@ -1120,7 +1117,7 @@ namespace NLBE_Bot
                                     foreach (DiscordAttachment attachment in e.Message.Attachments){
                                         if (attachment.FileName.EndsWith(".wotbreplay")){
                                             Tuple<string, DiscordMessage> returnedTuple = await Bot.handle(string.Empty, e.Channel, await e.Guild.GetMemberAsync(e.Author.Id), e.Guild.Name, e.Guild.Id, attachment);
-                                            await Bot.hofAfterUpload(returnedTuple, e.Message);
+                                            await hofAfterUpload(returnedTuple, e.Message);
                                             break;
                                         }
                                     }
@@ -1131,7 +1128,7 @@ namespace NLBE_Bot
                                             string[] splitted = e.Message.Content.Split(' ');
                                             string url = splitted[0];
                                             Tuple<string, DiscordMessage> returnedTuple = await Bot.handle(string.Empty, e.Channel, await e.Guild.GetMemberAsync(e.Author.Id), e.Guild.Name, e.Guild.Id, url);
-                                            await Bot.hofAfterUpload(returnedTuple, e.Message);
+                                            await hofAfterUpload(returnedTuple, e.Message);
                                         }
                                     }
                                 }
@@ -1610,12 +1607,13 @@ namespace NLBE_Bot
             }
         }
 
-        public static async Task<string> askQuestion(DiscordChannel channel, DiscordUser user, DiscordGuild guild, string question)
+        public async Task<string> askQuestion(DiscordChannel channel, DiscordUser user, DiscordGuild guild, string question)
         {
             if (channel != null){
                 try{
                     await channel.SendMessageAsync(question);
-                    InteractivityResult<DiscordMessage> message = await channel.GetNextMessageAsync(user, TimeSpan.FromDays(newPlayerWaitTime));
+                    TimeSpan newPlayerWaitTime = TimeSpan.FromDays(int.TryParse(_configuration["NLBEBOT:NewPlayerWaitTimeInDays"], out int newPlayerWaitTimeInt) ? newPlayerWaitTimeInt : 0);
+                    InteractivityResult<DiscordMessage> message = await channel.GetNextMessageAsync(user, newPlayerWaitTime);
                     //var interactivity = Bot.discordClient.GetInteractivity();
                     //InteractivityResult<DiscordMessage> message = await interactivity.WaitForMessageAsync(x => x.Channel == channel && x.Author == user);
                     if (!message.TimedOut){
@@ -4749,11 +4747,12 @@ namespace NLBE_Bot
         {
             return new TankHof(battle.view_url, battle.player_name, battle.vehicle, battle.details.damage_made, battle.vehicle_tier);
         }
-        public static async Task hofAfterUpload(Tuple<string, DiscordMessage> returnedTuple, DiscordMessage uploadMessage)
+        private async Task hofAfterUpload(Tuple<string, DiscordMessage> returnedTuple, DiscordMessage uploadMessage)
         {
             bool good = false;
             if (returnedTuple.Item1.Equals(string.Empty)){
-                await Task.Delay(Bot.hofWaitTime * 1000 * 60);//wacht 2 minuten
+                TimeSpan hofWaitTime = TimeSpan.FromSeconds(int.TryParse(_configuration["NLBEBOT:HofWaitTimeInSeconds"], out int hofWaitTimeInt) ? hofWaitTimeInt : 0);
+                await Task.Delay(hofWaitTime);
                 string description = string.Empty;
                 string thumbnail = string.Empty;
                 if (returnedTuple.Item2 != null){
@@ -4825,7 +4824,9 @@ namespace NLBE_Bot
 
         public static async Task handleError(string message, string exceptionMessage, string stackTrace)
         {
-            discordClient.Logger.LogError(message + exceptionMessage + Environment.NewLine + stackTrace);
+            string formattedMessage = message + exceptionMessage + Environment.NewLine + stackTrace;
+            _loggerTmp.LogError(formattedMessage);            
+            discordClient.Logger.LogError(formattedMessage);
             await sendThibeastmo(message, exceptionMessage, stackTrace);
         }
 

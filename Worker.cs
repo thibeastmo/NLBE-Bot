@@ -14,7 +14,7 @@ namespace NLBE_Bot
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Console.WriteLine("NLBE Bot is starting.");
+            _logger.LogInformation("NLBE Bot is starting.");
 
             try
             {
@@ -25,11 +25,11 @@ namespace NLBE_Bot
             }  
             catch (OperationCanceledException)
             {
-                Console.WriteLine("NLBE Bot was canceled.");
+                _logger.LogInformation("NLBE Bot was canceled.");
             }
             finally
-            {
-                Console.WriteLine("NLBE Bot is stopping.");
+            {                
+                _logger.LogInformation("NLBE Bot is stopping.");
             }
         }
     }
