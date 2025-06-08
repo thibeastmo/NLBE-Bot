@@ -21,7 +21,8 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
-    - name: "Setup Internal Packages"
+    # The below step is temporary until the other repo's publish the output as NuGet packages on a feed.
+    - name: "Setup internal packages"
       run: dotnet nuget add source ${GITHUB_WORKSPACE}
 
     - name: Restore dependencies
