@@ -184,9 +184,7 @@ namespace NLBE_Bot
                 return true;
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("[" + guildName + "] Could not send private message: ", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+                await handleError("[" + guildName + "] Could not send private message: ", ex.Message, ex.StackTrace);                
             }
             return false;
         }
@@ -271,10 +269,8 @@ namespace NLBE_Bot
                             try{
                                 newDiscEmbedBuilder.AddField(field.Name, field.Value, field.Inline);
                             }
-                            catch (Exception ex){
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);
-                                Console.ForegroundColor = ConsoleColor.Gray;
+                            catch (Exception ex){                                
+                                await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);                                
                             }
                         }
                     }
@@ -357,10 +353,8 @@ namespace NLBE_Bot
                         try{
                             newDiscEmbedBuilder.AddField(field.Name, field.Value, field.Inline);
                         }
-                        catch (Exception ex){
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);
-                            Console.ForegroundColor = ConsoleColor.Gray;
+                        catch (Exception ex){                            
+                            await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);                            
                         }
                     }
                 }
@@ -3412,10 +3406,8 @@ namespace NLBE_Bot
             try{
                 return channel.SendMessageAsync(null, embed).Result;
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace).Wait();
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace).Wait();               
                 return null;
             }
         }
@@ -3429,10 +3421,8 @@ namespace NLBE_Bot
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);               
             }
         }
         public static async Task SayTheUserIsNotAllowed(DiscordChannel channel)
@@ -3445,10 +3435,8 @@ namespace NLBE_Bot
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                
             }
         }
         public static async Task SayBotNotAuthorized(DiscordChannel channel)
@@ -3461,10 +3449,8 @@ namespace NLBE_Bot
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                
             }
         }
         public static async Task SayTooManyCharacters(DiscordChannel channel)
@@ -3478,9 +3464,7 @@ namespace NLBE_Bot
                 await channel.SendMessageAsync(null, embed);
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
                 await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
             }
         }
         public static async Task<DiscordMessage> SayReplayNotWorthy(DiscordChannel channel, WGBattle battle)
@@ -3511,10 +3495,8 @@ namespace NLBE_Bot
                     return await Bot.discordMessage.RespondAsync(null, embed);
                     //return await channel.SendMessageAsync(string.Empty, false, embed);
                 }
-                catch (Exception ex){
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                catch (Exception ex){                    
+                    await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                    
                 }
             }
             else{
@@ -3550,10 +3532,8 @@ namespace NLBE_Bot
                     return await Bot.discordMessage.RespondAsync(null, embed);
                     //return await channel.SendMessageAsync(string.Empty, false, embed);
                 }
-                catch (Exception ex){
-                    Console.ForegroundColor = ConsoleColor.Red;
+                catch (Exception ex){                    
                     await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                    Console.ForegroundColor = ConsoleColor.Gray;
                 }
             }
             {
