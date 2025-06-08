@@ -1,6 +1,5 @@
 # NLBE-Bot
 
-
 ## Installation
 
 ### On Windows
@@ -17,8 +16,6 @@
 
 ### Configuration
 
-TODO: document the below configurations
-
-  ``NLBEBOT:DiscordToken`` --> create new app on https://discord.com/developers/applications. Settings unknown at this point. 
-  ``NLBEBOT:WarGamingAppId`` --> Create new app of type `Server` https://developers.wargaming.net/applications/. Ensure all IP addresses of the running server are registered. Copy the ID into the configuration
+  ``NLBEBOT:DiscordToken`` --> create new app on https://discord.com/developers/applications. Settings unknown and need to be reverse engineered.
+  ``NLBEBOT:WarGamingAppId`` --> Create new app of type `Server` on https://developers.wargaming.net/applications/. Ensure all IP addresses of the running server are registered. Copy the ID into the configuration.
 
