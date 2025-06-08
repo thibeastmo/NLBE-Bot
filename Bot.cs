@@ -29,14 +29,13 @@ using System.Threading.Tasks;
 namespace NLBE_Bot 
 {
     //version 4.0.0-nightly-00760
-    internal class Bot(ILogger logger, IConfiguration configuration)
+    internal class Bot
     {
         // public static string version = "THIMO LOCAL";
         public static string version = "2.12";
         // public const string Prefix = "test ";
         public const string Prefix = "nlbe ";
         public const string logInputPath = "./loginputlines.txt";
-        public const string WG_APPLICATION_ID = "";
         public const string ERROR_REACTION = ":x:";
         public const string IN_PROGRESS_REACTION = ":hourglass_flowing_sand:";
         public const string ACTION_COMPLETED_REACTION = ":white_check_mark:";
@@ -86,14 +85,21 @@ namespace NLBE_Bot
         private DateTime lasTimeNamesWereUpdated;
         private short heartBeatCounter = 0;
 
-        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        private static ILogger _loggerTmp;
+        private readonly IConfiguration _configuration;
+        
+        public static string WarGamingAppId { get; private set; }
+        private static ILogger _logger;
+
+        public Bot(ILogger logger, IConfiguration configuration)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); ; // Note: temporary workarround to access the logger due to excessive usage of static methods.
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            
+            WarGamingAppId = _configuration["NLBEBOT:WarGamingAppId"];
+        }
 
         public async Task RunAsync()
         {
-            _loggerTmp = _logger; // Note: temporary workarround to access the logger due to excessive usage of static methods.
-
             //fmwotb = new Application(WG_APPLICATION_ID);
             discordClient = new DiscordClient(new DiscordConfiguration
             {
@@ -822,7 +828,7 @@ namespace NLBE_Bot
                                                 question = "**We konden dit Wargamingaccount niet vinden, probeer opnieuw! (Hoofdlettergevoelig)**\n" + question;
                                             }
                                             string ign = askQuestion(await Bot.GetWelkomChannel(), user, guild, question).Result;
-                                            searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WG_APPLICATION_ID, false, true, false);
+                                            searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WarGamingAppId, false, true, false);
                                             if (searchResults != null){
                                                 if (searchResults != null){
                                                     if (searchResults.Count > 0){
@@ -1230,7 +1236,7 @@ namespace NLBE_Bot
             if (!ignoreEvents && Channel.IsPrivate && weeklyEventWinner != null && weeklyEventWinner.Item1 != 0){
                 _ = Task.Run(async () => {
                     if (!lastMessage.Author.IsBot && Channel.Guild == null && lastMessage.CreationTimestamp > weeklyEventWinner.Item2){
-                        string vehiclesInString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID, new List<string>() { "name" });
+                        string vehiclesInString = await WGVehicle.vehiclesToString(WarGamingAppId, new List<string>() { "name" });
                         Json json = new Json(vehiclesInString, string.Empty);
                         List<Json> jsons = json.subJsons[1].subJsons;
                         List<string> tanks = new List<string>();
@@ -1473,7 +1479,7 @@ namespace NLBE_Bot
                                     bool accountFound = false;
                                     bool goodClanTag = false;
                                     Tuple<string, string> gebruiker = Bot.getIGNFromMember(member.DisplayName);
-                                    IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, Bot.WG_APPLICATION_ID, false, true, false);
+                                    IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, WarGamingAppId, false, true, false);
                                     if (wgAccounts != null && wgAccounts.Count > 0){
                                         //Account met exact deze gebruikersnaam gevonden
                                         accountFound = true;
@@ -3606,7 +3612,7 @@ namespace NLBE_Bot
             if (battle.details.achievements != null && battle.details.achievements.Count > 0){
                 List<FMWOTB.Achievement> achievementList = new List<FMWOTB.Achievement>();
                 for (int i = 0; i < battle.details.achievements.Count; i++){
-                    FMWOTB.Achievement tempAchievement = FMWOTB.Achievement.getAchievement(Bot.WG_APPLICATION_ID, battle.details.achievements.ElementAt(i).t).Result;
+                    FMWOTB.Achievement tempAchievement = FMWOTB.Achievement.getAchievement(WarGamingAppId, battle.details.achievements.ElementAt(i).t).Result;
                     if (tempAchievement != null){
                         achievementList.Add(tempAchievement);
                     }
@@ -3639,7 +3645,7 @@ namespace NLBE_Bot
         public static async Task<WGClan> searchForClan(DiscordChannel channel, DiscordMember member, string guildName, string clan_naam, bool loadMembers, DiscordUser user, Command command)
         {
             try{
-                var clans = await WGClan.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, clan_naam, Bot.WG_APPLICATION_ID, loadMembers);
+                var clans = await WGClan.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, clan_naam, WarGamingAppId, loadMembers);
                 int aantalClans = clans.Count;
                 List<WGClan> clanList = new List<WGClan>();
                 foreach (var clan in clans){
@@ -3843,7 +3849,7 @@ namespace NLBE_Bot
                     List<Members> memberListx = (List<Members>)memberList;
                     List<WGAccount> wgAccountList = new List<WGAccount>();
                     foreach (Members memberx in memberListx){
-                        wgAccountList.Add(new WGAccount(Bot.WG_APPLICATION_ID, memberx.account_id, false, false, false));
+                        wgAccountList.Add(new WGAccount(WarGamingAppId, memberx.account_id, false, false, false));
                     }
                     wgAccountList = wgAccountList.OrderBy(p => p.last_battle_time).ToList();
                     wgAccountList.Reverse();
@@ -4037,7 +4043,7 @@ namespace NLBE_Bot
 
         public static async Task<WGVehicle> getSpecificTank(long tank_id)
         {
-            string jsonString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID, tank_id);
+            string jsonString = await WGVehicle.vehiclesToString(WarGamingAppId, tank_id);
             Json json = new Json(jsonString, "WGVehicle");
             foreach (Json subJson in json.subJsons){
                 if (subJson.head.ToLower().Equals("data")){
@@ -4054,7 +4060,7 @@ namespace NLBE_Bot
             await channel.SendMessageAsync("**Gaat alle tanks verzamelen.**");
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            string jsonString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID);
+            string jsonString = await WGVehicle.vehiclesToString(WarGamingAppId);
             stopWatch.Stop();
             await channel.SendMessageAsync("**Response van Wargaming duurde: ** `" + (int)stopWatch.Elapsed.TotalSeconds + " s`\n**Gaat het antwoord omzetten naar een object.** (Kan even duren, circa 80s)");
             stopWatch.Restart();
@@ -4076,7 +4082,7 @@ namespace NLBE_Bot
         public static async Task<WGAccount> searchPlayer(DiscordChannel channel, DiscordMember member, DiscordUser user, string guildName, string naam)
         {
             try{
-                IReadOnlyList<WGAccount> searchResults = await WGAccount.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, naam, Bot.WG_APPLICATION_ID, false, false, true);
+                IReadOnlyList<WGAccount> searchResults = await WGAccount.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, naam, WarGamingAppId, false, false, true);
                 StringBuilder sb = new StringBuilder();
                 int index = 0;
                 if (searchResults != null){
@@ -4089,7 +4095,7 @@ namespace NLBE_Bot
                         index = await Bot.waitForReply(channel, user, sb.ToString(), searchResults.Count);
                     }
                     if (index >= 0 && searchResults.Count >= 1){
-                        WGAccount account = new WGAccount(Bot.WG_APPLICATION_ID, searchResults[index].account_id, false, true, true);
+                        WGAccount account = new WGAccount(WarGamingAppId, searchResults[index].account_id, false, true, true);
                         await Bot.showMemberInfo(channel, account);
                         return account;
                     }
@@ -4110,7 +4116,7 @@ namespace NLBE_Bot
 
         public static async Task<List<WGTournament>> initialiseTournaments(bool all)
         {
-            string tournamentJson = await Tournaments.tournamentsToString(Bot.WG_APPLICATION_ID);
+            string tournamentJson = await Tournaments.tournamentsToString(WarGamingAppId);
             Json json = new Json(tournamentJson, "Tournaments");
             List<WGTournament> tournamentsList = new List<WGTournament>();
             if (json != null){
@@ -4121,9 +4127,9 @@ namespace NLBE_Bot
                                 Tournaments tournaments = new Tournaments(subsubjson);
                                 if (tournaments.start_at.HasValue){
                                     if (tournaments.start_at.Value > DateTime.Now || all){
-                                        string wgTournamentJsonString = await WGTournament.tournamentsToString(Bot.WG_APPLICATION_ID, tournaments.tournament_id);
+                                        string wgTournamentJsonString = await WGTournament.tournamentsToString(WarGamingAppId, tournaments.tournament_id);
                                         Json wgTournamentJson = new Json(wgTournamentJsonString, "WGTournament");
-                                        WGTournament eenToernooi = new WGTournament(wgTournamentJson, Bot.WG_APPLICATION_ID);
+                                        WGTournament eenToernooi = new WGTournament(wgTournamentJson, WarGamingAppId);
                                         tournamentsList.Add(eenToernooi);
                                     }
                                 }
@@ -4138,7 +4144,7 @@ namespace NLBE_Bot
 
         public static async Task<List<FMWOTB.Achievement>> getAllAchievements()
         {
-            return await FMWOTB.Achievement.getAchievements(Bot.WG_APPLICATION_ID);
+            return await FMWOTB.Achievement.getAchievements(WarGamingAppId);
         }
 
         #region Hall Of Fame
@@ -4281,7 +4287,7 @@ namespace NLBE_Bot
         {
             string json = string.Empty;
             bool playerIDFound = false;
-            IReadOnlyList<WGAccount> accountInfo = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, Bot.WG_APPLICATION_ID, false, true, false);
+            IReadOnlyList<WGAccount> accountInfo = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WarGamingAppId, false, true, false);
             if (accountInfo != null){
                 if (accountInfo.Count > 0){
                     playerIDFound = true;
@@ -4825,7 +4831,7 @@ namespace NLBE_Bot
         public static async Task handleError(string message, string exceptionMessage, string stackTrace)
         {
             string formattedMessage = message + exceptionMessage + Environment.NewLine + stackTrace;
-            _loggerTmp.LogError(formattedMessage);            
+            _logger.LogError(formattedMessage);            
             discordClient.Logger.LogError(formattedMessage);
             await sendThibeastmo(message, exceptionMessage, stackTrace);
         }
