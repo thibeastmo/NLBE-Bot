@@ -1,12 +1,21 @@
-﻿using DSharpPlus;
+﻿using DiscordHelper;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Net.Models;
 using FMWOTB;
+using FMWOTB.Account;
+using FMWOTB.Clans;
+using FMWOTB.Exceptions;
+using FMWOTB.Tools;
 using FMWOTB.Tools.Replays;
+using FMWOTB.Tournament;
+using FMWOTB.Vehicles;
 using JsonObjectConverter;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -16,27 +25,17 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using FMWOTB.Account;
-using FMWOTB.Vehicles;
-using FMWOTB.Clans;
-using FMWOTB.Tools;
-using FMWOTB.Tournament;
-using DiscordHelper;
-using System.Timers;
-using FMWOTB.Exceptions;
-using Microsoft.VisualBasic;
-using DSharpPlus.EventArgs;
 
-namespace NLBE_Bot {
+namespace NLBE_Bot 
+{
     //version 4.0.0-nightly-00760
-    public class Bot {
+    internal class Bot
+    {
         // public static string version = "THIMO LOCAL";
         public static string version = "2.12";
         // public const string Prefix = "test ";
-        private const string Token = "";//nlbe bot
         public const string Prefix = "nlbe ";
         public const string logInputPath = "./loginputlines.txt";
-        public const string WG_APPLICATION_ID = "";
         public const string ERROR_REACTION = ":x:";
         public const string IN_PROGRESS_REACTION = ":hourglass_flowing_sand:";
         public const string ACTION_COMPLETED_REACTION = ":white_check_mark:";
@@ -81,28 +80,38 @@ namespace NLBE_Bot {
         public static bool ignoreCommands = false;
         public static bool ignoreEvents = false;
         public static Tuple<ulong, DateTime> weeklyEventWinner = new Tuple<ulong, DateTime>(0, DateTime.Now);
-        public static int waitTime = 30;
-        public static int hofWaitTime = 2;//in minutes
-        public static int newPlayerWaitTime = 1;//In days
+
         private static DiscordMessage discordMessage;//temp message
         private DateTime lasTimeNamesWereUpdated;
         private short heartBeatCounter = 0;
+
+        private readonly IConfiguration _configuration;
+        
+        public static string WarGamingAppId { get; private set; }
+        private static ILogger _logger;
+
+        public Bot(ILogger logger, IConfiguration configuration)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); ; // Note: temporary workarround to access the logger due to excessive usage of static methods.
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            
+            WarGamingAppId = _configuration["NLBEBOT:WarGamingAppId"];
+        }
+
         public async Task RunAsync()
         {
             //fmwotb = new Application(WG_APPLICATION_ID);
-
-
             discordClient = new DiscordClient(new DiscordConfiguration
             {
-                Token = Token,
+                Token = _configuration["NLBEBOT:DiscordToken"],
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
                 Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents
             });
-
+            
             discordClient.UseInteractivity(new InteractivityConfiguration
             {
-                Timeout = TimeSpan.FromSeconds(Bot.waitTime),
+                Timeout = TimeSpan.FromSeconds(int.TryParse(_configuration["NLBEBOT:DiscordTimeOutInSeconds"], out int timeout) ? timeout : 0)
             });
 
             var commandsConfig = new CommandsNextConfiguration
@@ -154,9 +163,7 @@ namespace NLBE_Bot {
                 return await channel.SendMessageAsync(Message);
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
                 await handleError("[" + guildName + "] (" + channel.Name + ") Could not send message: ", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
                 Worked = false;
                 if (ex.Message.ToLower().Contains("unauthorized")){
                     await Bot.SayBotNotAuthorized(channel);
@@ -177,9 +184,7 @@ namespace NLBE_Bot {
                 return true;
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("[" + guildName + "] Could not send private message: ", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+                await handleError("[" + guildName + "] Could not send private message: ", ex.Message, ex.StackTrace);                
             }
             return false;
         }
@@ -264,10 +269,8 @@ namespace NLBE_Bot {
                             try{
                                 newDiscEmbedBuilder.AddField(field.Name, field.Value, field.Inline);
                             }
-                            catch (Exception ex){
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);
-                                Console.ForegroundColor = ConsoleColor.Gray;
+                            catch (Exception ex){                                
+                                await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);                                
                             }
                         }
                     }
@@ -350,10 +353,8 @@ namespace NLBE_Bot {
                         try{
                             newDiscEmbedBuilder.AddField(field.Name, field.Value, field.Inline);
                         }
-                        catch (Exception ex){
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);
-                            Console.ForegroundColor = ConsoleColor.Gray;
+                        catch (Exception ex){                            
+                            await handleError("Something went wrong while trying to add a field to an embedded message:", ex.Message, ex.StackTrace);                            
                         }
                     }
                 }
@@ -820,8 +821,8 @@ namespace NLBE_Bot {
                                             else{
                                                 question = "**We konden dit Wargamingaccount niet vinden, probeer opnieuw! (Hoofdlettergevoelig)**\n" + question;
                                             }
-                                            string ign = Bot.askQuestion(await Bot.GetWelkomChannel(), user, guild, question).Result;
-                                            searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WG_APPLICATION_ID, false, true, false);
+                                            string ign = askQuestion(await Bot.GetWelkomChannel(), user, guild, question).Result;
+                                            searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WarGamingAppId, false, true, false);
                                             if (searchResults != null){
                                                 if (searchResults != null){
                                                     if (searchResults.Count > 0){
@@ -1116,7 +1117,7 @@ namespace NLBE_Bot {
                                     foreach (DiscordAttachment attachment in e.Message.Attachments){
                                         if (attachment.FileName.EndsWith(".wotbreplay")){
                                             Tuple<string, DiscordMessage> returnedTuple = await Bot.handle(string.Empty, e.Channel, await e.Guild.GetMemberAsync(e.Author.Id), e.Guild.Name, e.Guild.Id, attachment);
-                                            await Bot.hofAfterUpload(returnedTuple, e.Message);
+                                            await hofAfterUpload(returnedTuple, e.Message);
                                             break;
                                         }
                                     }
@@ -1127,7 +1128,7 @@ namespace NLBE_Bot {
                                             string[] splitted = e.Message.Content.Split(' ');
                                             string url = splitted[0];
                                             Tuple<string, DiscordMessage> returnedTuple = await Bot.handle(string.Empty, e.Channel, await e.Guild.GetMemberAsync(e.Author.Id), e.Guild.Name, e.Guild.Id, url);
-                                            await Bot.hofAfterUpload(returnedTuple, e.Message);
+                                            await hofAfterUpload(returnedTuple, e.Message);
                                         }
                                     }
                                 }
@@ -1229,7 +1230,7 @@ namespace NLBE_Bot {
             if (!ignoreEvents && Channel.IsPrivate && weeklyEventWinner != null && weeklyEventWinner.Item1 != 0){
                 _ = Task.Run(async () => {
                     if (!lastMessage.Author.IsBot && Channel.Guild == null && lastMessage.CreationTimestamp > weeklyEventWinner.Item2){
-                        string vehiclesInString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID, new List<string>() { "name" });
+                        string vehiclesInString = await WGVehicle.vehiclesToString(WarGamingAppId, new List<string>() { "name" });
                         Json json = new Json(vehiclesInString, string.Empty);
                         List<Json> jsons = json.subJsons[1].subJsons;
                         List<string> tanks = new List<string>();
@@ -1472,7 +1473,7 @@ namespace NLBE_Bot {
                                     bool accountFound = false;
                                     bool goodClanTag = false;
                                     Tuple<string, string> gebruiker = Bot.getIGNFromMember(member.DisplayName);
-                                    IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, Bot.WG_APPLICATION_ID, false, true, false);
+                                    IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, WarGamingAppId, false, true, false);
                                     if (wgAccounts != null && wgAccounts.Count > 0){
                                         //Account met exact deze gebruikersnaam gevonden
                                         accountFound = true;
@@ -1606,12 +1607,13 @@ namespace NLBE_Bot {
             }
         }
 
-        public static async Task<string> askQuestion(DiscordChannel channel, DiscordUser user, DiscordGuild guild, string question)
+        public async Task<string> askQuestion(DiscordChannel channel, DiscordUser user, DiscordGuild guild, string question)
         {
             if (channel != null){
                 try{
                     await channel.SendMessageAsync(question);
-                    InteractivityResult<DiscordMessage> message = await channel.GetNextMessageAsync(user, TimeSpan.FromDays(newPlayerWaitTime));
+                    TimeSpan newPlayerWaitTime = TimeSpan.FromDays(int.TryParse(_configuration["NLBEBOT:NewPlayerWaitTimeInDays"], out int newPlayerWaitTimeInt) ? newPlayerWaitTimeInt : 0);
+                    InteractivityResult<DiscordMessage> message = await channel.GetNextMessageAsync(user, newPlayerWaitTime);
                     //var interactivity = Bot.discordClient.GetInteractivity();
                     //InteractivityResult<DiscordMessage> message = await interactivity.WaitForMessageAsync(x => x.Channel == channel && x.Author == user);
                     if (!message.TimedOut){
@@ -3404,10 +3406,8 @@ namespace NLBE_Bot {
             try{
                 return channel.SendMessageAsync(null, embed).Result;
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace).Wait();
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace).Wait();               
                 return null;
             }
         }
@@ -3421,10 +3421,8 @@ namespace NLBE_Bot {
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);               
             }
         }
         public static async Task SayTheUserIsNotAllowed(DiscordChannel channel)
@@ -3437,10 +3435,8 @@ namespace NLBE_Bot {
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                
             }
         }
         public static async Task SayBotNotAuthorized(DiscordChannel channel)
@@ -3453,10 +3449,8 @@ namespace NLBE_Bot {
             try{
                 await channel.SendMessageAsync(null, embed);
             }
-            catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
-                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
+            catch (Exception ex){                
+                await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                
             }
         }
         public static async Task SayTooManyCharacters(DiscordChannel channel)
@@ -3470,9 +3464,7 @@ namespace NLBE_Bot {
                 await channel.SendMessageAsync(null, embed);
             }
             catch (Exception ex){
-                Console.ForegroundColor = ConsoleColor.Red;
                 await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                Console.ForegroundColor = ConsoleColor.Gray;
             }
         }
         public static async Task<DiscordMessage> SayReplayNotWorthy(DiscordChannel channel, WGBattle battle)
@@ -3503,10 +3495,8 @@ namespace NLBE_Bot {
                     return await Bot.discordMessage.RespondAsync(null, embed);
                     //return await channel.SendMessageAsync(string.Empty, false, embed);
                 }
-                catch (Exception ex){
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                catch (Exception ex){                    
+                    await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);                    
                 }
             }
             else{
@@ -3542,10 +3532,8 @@ namespace NLBE_Bot {
                     return await Bot.discordMessage.RespondAsync(null, embed);
                     //return await channel.SendMessageAsync(string.Empty, false, embed);
                 }
-                catch (Exception ex){
-                    Console.ForegroundColor = ConsoleColor.Red;
+                catch (Exception ex){                    
                     await handleError("Something went wrong while trying to send an embedded message:", ex.Message, ex.StackTrace);
-                    Console.ForegroundColor = ConsoleColor.Gray;
                 }
             }
             {
@@ -3604,7 +3592,7 @@ namespace NLBE_Bot {
             if (battle.details.achievements != null && battle.details.achievements.Count > 0){
                 List<FMWOTB.Achievement> achievementList = new List<FMWOTB.Achievement>();
                 for (int i = 0; i < battle.details.achievements.Count; i++){
-                    FMWOTB.Achievement tempAchievement = FMWOTB.Achievement.getAchievement(Bot.WG_APPLICATION_ID, battle.details.achievements.ElementAt(i).t).Result;
+                    FMWOTB.Achievement tempAchievement = FMWOTB.Achievement.getAchievement(WarGamingAppId, battle.details.achievements.ElementAt(i).t).Result;
                     if (tempAchievement != null){
                         achievementList.Add(tempAchievement);
                     }
@@ -3637,7 +3625,7 @@ namespace NLBE_Bot {
         public static async Task<WGClan> searchForClan(DiscordChannel channel, DiscordMember member, string guildName, string clan_naam, bool loadMembers, DiscordUser user, Command command)
         {
             try{
-                var clans = await WGClan.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, clan_naam, Bot.WG_APPLICATION_ID, loadMembers);
+                var clans = await WGClan.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, clan_naam, WarGamingAppId, loadMembers);
                 int aantalClans = clans.Count;
                 List<WGClan> clanList = new List<WGClan>();
                 foreach (var clan in clans){
@@ -3841,7 +3829,7 @@ namespace NLBE_Bot {
                     List<Members> memberListx = (List<Members>)memberList;
                     List<WGAccount> wgAccountList = new List<WGAccount>();
                     foreach (Members memberx in memberListx){
-                        wgAccountList.Add(new WGAccount(Bot.WG_APPLICATION_ID, memberx.account_id, false, false, false));
+                        wgAccountList.Add(new WGAccount(WarGamingAppId, memberx.account_id, false, false, false));
                     }
                     wgAccountList = wgAccountList.OrderBy(p => p.last_battle_time).ToList();
                     wgAccountList.Reverse();
@@ -4035,7 +4023,7 @@ namespace NLBE_Bot {
 
         public static async Task<WGVehicle> getSpecificTank(long tank_id)
         {
-            string jsonString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID, tank_id);
+            string jsonString = await WGVehicle.vehiclesToString(WarGamingAppId, tank_id);
             Json json = new Json(jsonString, "WGVehicle");
             foreach (Json subJson in json.subJsons){
                 if (subJson.head.ToLower().Equals("data")){
@@ -4052,7 +4040,7 @@ namespace NLBE_Bot {
             await channel.SendMessageAsync("**Gaat alle tanks verzamelen.**");
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            string jsonString = await WGVehicle.vehiclesToString(Bot.WG_APPLICATION_ID);
+            string jsonString = await WGVehicle.vehiclesToString(WarGamingAppId);
             stopWatch.Stop();
             await channel.SendMessageAsync("**Response van Wargaming duurde: ** `" + (int)stopWatch.Elapsed.TotalSeconds + " s`\n**Gaat het antwoord omzetten naar een object.** (Kan even duren, circa 80s)");
             stopWatch.Restart();
@@ -4074,7 +4062,7 @@ namespace NLBE_Bot {
         public static async Task<WGAccount> searchPlayer(DiscordChannel channel, DiscordMember member, DiscordUser user, string guildName, string naam)
         {
             try{
-                IReadOnlyList<WGAccount> searchResults = await WGAccount.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, naam, Bot.WG_APPLICATION_ID, false, false, true);
+                IReadOnlyList<WGAccount> searchResults = await WGAccount.searchByName(SearchAccuracy.STARTS_WITH_CASE_INSENSITIVE, naam, WarGamingAppId, false, false, true);
                 StringBuilder sb = new StringBuilder();
                 int index = 0;
                 if (searchResults != null){
@@ -4087,7 +4075,7 @@ namespace NLBE_Bot {
                         index = await Bot.waitForReply(channel, user, sb.ToString(), searchResults.Count);
                     }
                     if (index >= 0 && searchResults.Count >= 1){
-                        WGAccount account = new WGAccount(Bot.WG_APPLICATION_ID, searchResults[index].account_id, false, true, true);
+                        WGAccount account = new WGAccount(WarGamingAppId, searchResults[index].account_id, false, true, true);
                         await Bot.showMemberInfo(channel, account);
                         return account;
                     }
@@ -4108,7 +4096,7 @@ namespace NLBE_Bot {
 
         public static async Task<List<WGTournament>> initialiseTournaments(bool all)
         {
-            string tournamentJson = await Tournaments.tournamentsToString(Bot.WG_APPLICATION_ID);
+            string tournamentJson = await Tournaments.tournamentsToString(WarGamingAppId);
             Json json = new Json(tournamentJson, "Tournaments");
             List<WGTournament> tournamentsList = new List<WGTournament>();
             if (json != null){
@@ -4119,9 +4107,9 @@ namespace NLBE_Bot {
                                 Tournaments tournaments = new Tournaments(subsubjson);
                                 if (tournaments.start_at.HasValue){
                                     if (tournaments.start_at.Value > DateTime.Now || all){
-                                        string wgTournamentJsonString = await WGTournament.tournamentsToString(Bot.WG_APPLICATION_ID, tournaments.tournament_id);
+                                        string wgTournamentJsonString = await WGTournament.tournamentsToString(WarGamingAppId, tournaments.tournament_id);
                                         Json wgTournamentJson = new Json(wgTournamentJsonString, "WGTournament");
-                                        WGTournament eenToernooi = new WGTournament(wgTournamentJson, Bot.WG_APPLICATION_ID);
+                                        WGTournament eenToernooi = new WGTournament(wgTournamentJson, WarGamingAppId);
                                         tournamentsList.Add(eenToernooi);
                                     }
                                 }
@@ -4136,7 +4124,7 @@ namespace NLBE_Bot {
 
         public static async Task<List<FMWOTB.Achievement>> getAllAchievements()
         {
-            return await FMWOTB.Achievement.getAchievements(Bot.WG_APPLICATION_ID);
+            return await FMWOTB.Achievement.getAchievements(WarGamingAppId);
         }
 
         #region Hall Of Fame
@@ -4279,7 +4267,7 @@ namespace NLBE_Bot {
         {
             string json = string.Empty;
             bool playerIDFound = false;
-            IReadOnlyList<WGAccount> accountInfo = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, Bot.WG_APPLICATION_ID, false, true, false);
+            IReadOnlyList<WGAccount> accountInfo = await WGAccount.searchByName(SearchAccuracy.EXACT, ign, WarGamingAppId, false, true, false);
             if (accountInfo != null){
                 if (accountInfo.Count > 0){
                     playerIDFound = true;
@@ -4745,11 +4733,12 @@ namespace NLBE_Bot {
         {
             return new TankHof(battle.view_url, battle.player_name, battle.vehicle, battle.details.damage_made, battle.vehicle_tier);
         }
-        public static async Task hofAfterUpload(Tuple<string, DiscordMessage> returnedTuple, DiscordMessage uploadMessage)
+        private async Task hofAfterUpload(Tuple<string, DiscordMessage> returnedTuple, DiscordMessage uploadMessage)
         {
             bool good = false;
             if (returnedTuple.Item1.Equals(string.Empty)){
-                await Task.Delay(Bot.hofWaitTime * 1000 * 60);//wacht 2 minuten
+                TimeSpan hofWaitTime = TimeSpan.FromSeconds(int.TryParse(_configuration["NLBEBOT:HofWaitTimeInSeconds"], out int hofWaitTimeInt) ? hofWaitTimeInt : 0);
+                await Task.Delay(hofWaitTime);
                 string description = string.Empty;
                 string thumbnail = string.Empty;
                 if (returnedTuple.Item2 != null){
@@ -4821,7 +4810,9 @@ namespace NLBE_Bot {
 
         public static async Task handleError(string message, string exceptionMessage, string stackTrace)
         {
-            discordClient.Logger.LogError(message + exceptionMessage + Environment.NewLine + stackTrace);
+            string formattedMessage = message + exceptionMessage + Environment.NewLine + stackTrace;
+            _logger.LogError(formattedMessage);            
+            discordClient.Logger.LogError(formattedMessage);
             await sendThibeastmo(message, exceptionMessage, stackTrace);
         }
 

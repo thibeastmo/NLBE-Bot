@@ -185,7 +185,7 @@ namespace NLBE_Bot.Blitzstars {
         {
             var response = ApiRequester.GetRequest("https://www.blitzstars.com/api/tankhistories/for/" + accountId);
             var tankHistories = JsonConvert.DeserializeObject<List<TankHistory>>(response);
-            var responseVehicles = ApiRequester.GetRequest("https://api.wotblitz.eu/wotb/tanks/stats/?application_id=" + Bot.WG_APPLICATION_ID+ "&account_id=" + accountId);
+            var responseVehicles = ApiRequester.GetRequest("https://api.wotblitz.eu/wotb/tanks/stats/?application_id=" + Bot.WarGamingAppId + "&account_id=" + accountId);
             responseVehicles = Regex.Replace(responseVehicles, "\"data\":{\"([0-9]*)\"", "\"data\":{\"Vehicles\"");
             var playerVehicleData = JsonConvert.DeserializeObject<PlayerVehicle>(responseVehicles);
             var combined = Handler.Combine(playerVehicleData.data.Vehicles.ToList(), tankHistories);

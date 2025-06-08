@@ -555,7 +555,7 @@ namespace NLBE_Bot
                                 bool hasAnswered = false;
                                 bool hasConfirmed = false;
                                 bool firstTime = true;
-                                WGAccount account = new WGAccount(Bot.WG_APPLICATION_ID, 552887317, false, true, false);
+                                WGAccount account = new WGAccount(Bot.WarGamingAppId, 552887317, false, true, false);
                                 while (!hasAnswered || !hasConfirmed)
                                 {
                                     if (firstTime)
@@ -1646,7 +1646,7 @@ namespace NLBE_Bot
                                 tempIGNName = splitted[0].ToString().Trim();
                             }
                             //var searchResults = await Bot.wotb.Account.ListAsync(tempIGNName, WGSearchType.Exact, 20, null, null);
-                            var searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, tempIGNName, Bot.WG_APPLICATION_ID, false, false, false);
+                            var searchResults = await WGAccount.searchByName(SearchAccuracy.EXACT, tempIGNName, Bot.WarGamingAppId, false, false, false);
                             if (searchResults != null)
                             {
                                 if (searchResults.Count > 0)
@@ -1984,7 +1984,7 @@ namespace NLBE_Bot
                         }
                         if (isLong)
                         {
-                            WGAccount account = new WGAccount(Bot.WG_APPLICATION_ID, id, false, true, true);
+                            WGAccount account = new WGAccount(Bot.WarGamingAppId, id, false, true, true);
                             if (account != null)
                             {
                                 await Bot.showMemberInfo(ctx.Channel, account);
@@ -2531,7 +2531,7 @@ namespace NLBE_Bot
         //                        {
         //                            bool accountFound = false;
         //                            Tuple<string, string> gebruiker = Bot.getIGNFromMember(member.DisplayName);
-        //                            IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, Bot.WG_APPLICATION_ID, false, true, false);
+        //                            IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, gebruiker.Item2, Bot_warGamingAppId, false, true, false);
         //                            if (wgAccounts != null)
         //                            {
         //                                if (wgAccounts.Count > 0)
@@ -2620,7 +2620,7 @@ namespace NLBE_Bot
         //                     {
         //                         if (member.Roles.Contains(ctx.Guild.GetRole(Bot.LEDEN_ROLE)))
         //                         {
-        //                             IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, member.DisplayName.Split("] ")[1], Bot.WG_APPLICATION_ID, false, true, false);
+        //                             IReadOnlyList<WGAccount> wgAccounts = await WGAccount.searchByName(SearchAccuracy.EXACT, member.DisplayName.Split("] ")[1], Bot_warGamingAppId, false, true, false);
         //                             if (wgAccounts != null)
         //                             {
         //                                 if (wgAccounts.Count > 0)
